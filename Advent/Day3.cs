@@ -9,133 +9,94 @@ namespace Advent
     {
         private string[] GetWires()
         {
-            return File.ReadAllLines("Inputs/3.txt");
+            return File.ReadAllLines("3.txt");
         }
 
         public string GetResultPart1()
         {
+            var (visitedFirst, visitedSecond) = GetLines();
+            var intersections = visitedFirst.Intersect(visitedSecond);
+
+            var closest = int.MaxValue;
+            foreach (var point in intersections)
+            {
+                closest = Math.Min(closest, Math.Abs(point.X) + Math.Abs(point.Y));
+            }
+            return $"{closest}";
+            
+        }
+
+        public string GetResultPart2()
+        {
+            var (visitedFirst, visitedSecond) = GetLines();
+            var intersections = visitedFirst.Intersect(visitedSecond);
+
+            var minSteps = int.MaxValue;
+            foreach (var intersection in intersections)
+            {
+                var first = visitedFirst.First(x => x.Equals(intersection));
+                var second = visitedSecond.First(x => x.Equals(intersection));
+
+                minSteps = Math.Min(minSteps, first.Step + second.Step);
+            }
+
+            return $"{minSteps}";
+        }
+
+        private (List<Point> visitedFirst, List<Point> visitedSecond) GetLines()
+        {
             var lines = GetWires();
             var firstLineCommands = lines[0].Split(',').Select(ToCommand).ToArray();
             var secondLineCommands = lines[1].Split(',').Select(ToCommand).ToArray();
-            var visitedFirst = new List<(int, int)>();
-            var visitedSecond = new List<(int, int)>();
 
+            var visitedFirst = GetPoints(firstLineCommands);
+            var visitedSecond = GetPoints(secondLineCommands);
+            return (visitedFirst, visitedSecond);
+        }
 
+        private static List<Point> GetPoints((char cmd, int n)[] commands)
+        {
             var lastX = 0;
             var lastY = 0;
-            foreach (var (c, n) in firstLineCommands)
+            var loopCounter = 0;
+            var points = new List<Point>();
+            foreach (var (c, n) in commands)
             {
+                
                 switch (c)
                 {
                     case 'U':
                         for (int i = 1; i <= n; i++)
                         {
                             lastY++;
-                            visitedFirst.Add((lastX, lastY));
+                            points.Add(new Point(lastX, lastY, ++loopCounter));
                         }
                         break;
                     case 'D':
                         for (int i = 1; i <= n; i++)
                         {
                             lastY--;
-                            visitedFirst.Add((lastX, lastY));
+                            points.Add(new Point(lastX, lastY, ++loopCounter));
                         }
                         break;
                     case 'R':
                         for (int i = 1; i <= n; i++)
                         {
                             lastX++;
-                            visitedFirst.Add((lastX, lastY));
+                            points.Add(new Point(lastX, lastY, ++loopCounter));
                         }
                         break;
                     case 'L':
                         for (int i = 1; i <= n; i++)
                         {
                             lastX--;
-                            visitedFirst.Add((lastX, lastY));
+                            points.Add(new Point(lastX, lastY, ++loopCounter));
                         }
                         break;
                 }
             }
 
-            lastX = 0;
-            lastY = 0;
-            foreach (var (c, n) in secondLineCommands)
-            {
-                switch (c)
-                {
-                    case 'U':
-                        for (int i = 1; i <= n; i++)
-                        {
-                            lastY++;
-                            visitedSecond.Add((lastX, lastY));
-                        }
-                        break;
-                    case 'D':
-                        for (int i = 1; i <= n; i++)
-                        {
-                            lastY--;
-                            visitedSecond.Add((lastX, lastY));
-                        }
-                        break;
-                    case 'R':
-                        for (int i = 1; i <= n; i++)
-                        {
-                            lastX++;
-                            visitedSecond.Add((lastX, lastY));
-                        }
-                        break;
-                    case 'L':
-                        for (int i = 1; i <= n; i++)
-                        {
-                            lastX--;
-                            visitedSecond.Add((lastX, lastY));
-                        }
-                        break;
-                }
-            }
-
-            var firstQ1 = visitedFirst.Where(x => x.Item1 > 0 && x.Item2 > 0).ToArray();
-            var firstQ2 = visitedFirst.Where(x => x.Item1 < 0 && x.Item2 > 0).ToArray();
-            var firstQ3 = visitedFirst.Where(x => x.Item1 < 0 && x.Item2 < 0).ToArray();
-            var firstQ4 = visitedFirst.Where(x => x.Item1 > 0 && x.Item2 < 0).ToArray();
-
-            var secondQ1 = visitedSecond.Where(x => x.Item1 > 0 && x.Item2 > 0).ToArray();
-            var secondQ2 = visitedSecond.Where(x => x.Item1 < 0 && x.Item2 > 0).ToArray();
-            var secondQ3 = visitedSecond.Where(x => x.Item1 < 0 && x.Item2 < 0).ToArray();
-            var secondQ4 = visitedSecond.Where(x => x.Item1 > 0 && x.Item2 < 0).ToArray();
-
-            var shortestQ1 = GetShortest(firstQ1, secondQ1);
-            var shortestQ2 = GetShortest(firstQ2, secondQ2);
-            var shortestQ3 = GetShortest(firstQ3, secondQ3);
-            var shortestQ4 = GetShortest(firstQ4, secondQ4);
-
-            return $"{shortestQ1} {shortestQ2} {shortestQ3} {shortestQ4}";
-
-
-        }
-        private static int GetShortest((int, int)[] first, (int, int)[] second)
-        {
-            var shortest = int.MaxValue;
-            foreach (var itemFirst in first)
-            {
-                foreach (var itemSecond in second)
-                {
-                    if (itemFirst == itemSecond)
-                    {
-                        var dist = CalculateManhattanDistance(0, 0, itemFirst.Item1, itemFirst.Item2);
-                        if (dist < shortest)
-                            shortest = dist;
-                    }
-                }
-            }
-
-            return shortest;
-        }
-
-        public static int CalculateManhattanDistance(int x1, int y1, int x2, int y2)
-        {
-            return Math.Abs(x1 - x2) + Math.Abs(y1 - y2);
+            return points;
         }
 
         private static (char cmd, int n) ToCommand(string command)
@@ -144,6 +105,31 @@ namespace Advent
             var n = command.Substring(1, command.Length - 1);
 
             return (c, int.Parse(n));
+        }
+
+        public class Point
+        {
+            public Point(int x, int y, int step)
+            {
+                X = x;
+                Y = y;
+                Step = step;
+            }
+            public int X { get; }
+            public int Y { get;  }
+            public int Step { get;  }
+            
+            public override bool Equals(object obj)
+            {
+                if (!(obj is Point other)) return false;
+
+                return X == other.X && Y == other.Y;
+            }
+
+            public override int GetHashCode()
+            {
+                return 42 * X.GetHashCode() * Y.GetHashCode();
+            }
         }
     }
 }
